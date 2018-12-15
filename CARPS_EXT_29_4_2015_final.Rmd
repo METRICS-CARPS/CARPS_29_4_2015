@@ -1,0 +1,506 @@
+---
+title: "CARPS Reproducibility Report"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+---
+
+# Report Details
+
+```{r}
+articleID <- "CARPS_EXT_29_4_2015" # insert the article ID code here e.g., "10-3-2015_PS"
+reportType <- "final" # specify whether this is the 'pilot' report or 'final' report
+pilotNames <- "Angeline Tsui" # insert the pilot's name here e.g., "Tom Hardwicke".  If there are multiple pilots enter both names in a character string e.g., "Tom Hardwicke, Bob Dylan"
+copilotNames <- "Michele Nuijten" # # insert the co-pilot's name here e.g., "Michael Frank". If there are multiple co-pilots enter both names in a character string e.g., "Tom Hardwicke, Bob Dylan"
+pilotTTC <- 260 # insert the pilot's estimated time to complete (in minutes, fine to approximate) e.g., 120
+copilotTTC <- 240 # insert the co-pilot's estimated time to complete (in minutes, fine to approximate) e.g., 120
+pilotStartDate <- "10/18/18" # insert the pilot's start date in US format e.g., as.Date("01/25/18", format = "%m/%d/%y")
+copilotStartDate <- "12/15/18" # insert the co-pilot's start date in US format e.g., as.Date("01/25/18", format = "%m/%d/%y")
+completionDate <- "12/15/18" # copilot insert the date of final report completion (after any necessary rounds of author assistance) in US format e.g., as.Date("01/25/18", format = "%m/%d/%y")
+```
+
+------
+
+#### Methods summary: 
+This study investigated whether judgments of another person’s intellect can be affected by paralinguistic cues, such as the person's voice. The researchers asked M.B.A. students to provide spoken and written “elevator pitches” — short descriptions of their qualifications—that they might use with potential employers. The researchers asked hypothetical employers (evaluators) to watch, listen to, or read these candidates’ pitches and then evaluated the candidates’ intellect. The hypothetical employers also reported their general impressions of the candidates and indicated their interest in hiring the candidates.
+
+In Experiment 1 (**note: the only focus for the re-analysis in the paper), the researchers recruited 18 M.B.A students to provide both a spoken and a written pitch to a prospective employer. 
+
+The researchers recruited 162 people from a museum to evaluate the M.B.A students' pitches. the researchers randomly assigned them into three different conditions: (i) video condition: evaluators watched and listened to a candidate’s spoken pitch, (ii) audio condition only: evaluators listened to a spoken pitch, (iii) transcript condition: evaluators read a transcribed pitch. Each evaluator therefore observed only one candidate’s pitch in one medium. After seeing, hearing, or reading a candidate’s pitch, evaluators needed to rate (i) how competent the candidate was, (ii) how thoughtful the candidate was, (iii) how intelligent the candidate was, in comparison to an average candidate with a M.B.A degree. The researchers averaged the above three ratings to obtain a composite measure of intellect. In addition, evaluators also needed to report their general impressions of the candidates, this measure was a composite of the following ratings: (a) how much the evaluators liked the candidate, (b) how positive their overall impression of the candidate was, (c) how negative their overall impression of the candidate was. 
+
+------
+
+#### Target outcomes: 
+
+> Hypothetical  employers’  evaluations. As  predicted, evaluators’  beliefs  about  job  candidates’  intellect—their  competence, thoughtfulness, and intelligence—depended on  the  communication  medium, F(2,  157)  =  10.81, p < .01, η2 =  .12.  As  indicated  by  the  standardized  scores  shown  in  Figure  1,  evaluators  who  heard  pitches  rated the  candidates’  intellect  more  highly  (M =  0.91, SD =  1.79) than did evaluators who read transcripts of pitches (M = −0.70, SD = 2.81), t(157) = 3.79, p < .01, 95% confidence  interval  (CI)  of  the  difference  =  [0.70,  2.51], d = 0.60.  Evaluators  who  watched  pitches  did  not  evaluate the candidates’ intellect (M = 1.09, SD = 1.80) differently than evaluators who listened to pitches, t(157) < 1. Simply adding more individuating information about a candidate through visual  cues,  such  as  physical  appearance  and nonverbal  mannerisms,  had  no  measurable  impact  on  evaluations of the candidate’s mind. Candidates’ intellect was conveyed primarily through their voice.
+
+> Perhaps more important, evaluators who heard pitches also  reported  more  favorable  impressions  of  the  candidates—liked the candidates more and had more positive and  less  negative  impressions  of  the candidates—than  did evaluators who read pitches (M = 5.69, SD = 1.96, vs. M = 4.78, SD = 2.64), t(159) = 2.16, p = .03, 95% CI of the difference = [0.02, 1.80], d = 0.34 (see Fig. 1). Evaluators who heard pitches also reported being significantly more likely to hire the candidates (M = 4.34, SD = 2.26) than did evaluators who read exactly the same pitches (M = 3.06, SD = 3.15), t(156) = 2.49, p = .01, 95% CI of the difference = [0.22, 2.34], d = 0.40 (see Fig. 1). These results again did not appear to stem simply from having more individuating information about the candidates in the audio condition, because evaluators who watched pitches did not report more favorable impressions (M = 5.98, SD = 1.91) or an increased likelihood of hiring the candidates (M = 4.46, SD = 2.43) compared with evaluators who heard pitches, ts < 1.  
+
+------
+
+```{r global_options, include=FALSE}
+# sets up some formatting options for the R Markdown document
+knitr::opts_chunk$set(echo=TRUE, warning=FALSE, message=FALSE)
+```
+
+# Step 1: Load packages and prepare report object
+
+```{r}
+# load packages
+library(tidyverse) # for data munging
+library(knitr) # for kable table formating
+library(haven) # import and export 'SPSS', 'Stata' and 'SAS' Files
+library(readxl) # import excel files
+library(CARPSreports) # custom report functions
+library(sjstats) # for calculating effect size
+library(compute.es) #for calculating Cohen's d based on the observed and reported t stats
+library(lsmeans) # for calculating pairwise comparisons
+```
+
+```{r}
+# Prepare report object. This will be updated automatically by the reproCheck function each time values are compared
+reportObject <- data.frame(dummyRow = TRUE, reportedValue = NA, obtainedValue = NA, valueType = NA, percentageError = NA, comparisonOutcome = NA, eyeballCheck = NA)
+```
+
+# Step 2: Load data
+
+```{r}
+data <- read_sav("data/Study1 data.sav", encoding=NULL, user_na = FALSE)
+```
+
+# Step 3: Tidy data
+
+```{r}
+# make Condition a factor variable
+data <- data %>%
+  mutate(Condition = factor(Condition))
+```
+
+# Step 4: Run analysis
+
+## Descriptive statistics
+
+```{r}
+#Descriptive stats for the variable "intellect"
+
+descr_intellect <- data %>%
+  group_by(Condition) %>%
+  summarize(
+    # means and sd of intellect rating across different conditions.
+    mean = round(mean(intellect, na.rm = TRUE), 2),
+    sd = round(sd(intellect, na.rm = TRUE), 2)) %>%
+  gather("statistic", "value", mean, sd) %>%
+  # reported means and sds of intellect
+  mutate(reported = c(".91", "-0.70", "1.09",
+                      "1.79", "2.81", "1.80"))
+
+# reproCheck for means and sds of intellect for all conditions
+for(i in 1:nrow(descr_intellect)){
+  reportObject <- reproCheck(
+    reportedValue = as.character(descr_intellect$value[i]),
+    obtainedValue = descr_intellect$reported[i],
+    valueType = as.character(descr_intellect$statistic[i]))
+}
+
+#-------------------------------------------------------
+
+# Descriptive stats for the variable "impression"
+descr_impression <- data %>%
+  group_by(Condition) %>%
+  summarize(
+    # means and sds of impression across conditions
+    mean = round(mean(impression, na.rm = TRUE), 2),
+    sd = round(sd(impression, na.rm = TRUE), 2)) %>%
+  gather("statistic", "value", mean, sd) %>%
+  # reported means and sds of impression
+  mutate(reported = c("5.69", "4.78", "5.98",
+                      "1.96", "2.64", "1.91"))
+
+# reproCheck for means and sds of impression for all conditions
+for(i in 1:nrow(descr_impression)){
+  reportObject <- reproCheck(
+    reportedValue = as.character(descr_impression$value[i]),
+    obtainedValue = descr_impression$reported[i],
+    valueType = as.character(descr_impression$statistic[i]))
+}
+
+#-------------------------------------------------------
+
+# Descriptive stats for the variable "hiring"
+descr_hire <- data %>%
+  group_by(Condition) %>%
+  summarize(
+    # means and sds of impression across conditions
+    mean = round(mean(hire, na.rm = TRUE), 2),
+    sd = round(sd(hire, na.rm = TRUE), 2)) %>%
+  gather("statistic", "value", mean, sd) %>%
+  # reported means and sds of impression
+  mutate(reported = c("4.34", "3.06", "4.46",
+                      "2.26", "3.15", "2.43"))
+
+# reproCheck for means and sds of impression for all conditions
+for(i in 1:nrow(descr_hire)){
+  reportObject <- reproCheck(
+    reportedValue = as.character(descr_hire$value[i]),
+    obtainedValue = descr_hire$reported[i],
+    valueType = as.character(descr_hire$statistic[i]))
+}
+```
+
+All descriptive statistics are correct!
+
+## Inferential statistics
+
+### One-way ANOVA for the variable intellect
+
+#### Omnibus results
+
+```{r}
+# one-way ANOVA for the variable intellect
+intellect_ANOVA <- aov(intellect ~ Condition, data = data)
+intellect_ANOVA_summary <- summary(intellect_ANOVA)
+
+# reprocheck for the F-test
+reportObject <- reproCheck(
+  reportedValue = "10.81", 
+  obtainedValue = intellect_ANOVA_summary[[1]]$`F value`[1],
+  valueType="F")
+
+reportObject <- reproCheck(
+  reportedValue = "2", 
+  obtainedValue = intellect_ANOVA_summary[[1]]$Df[1], 
+  valueType = "df")
+
+reportObject <- reproCheck(
+  reportedValue = "157", 
+  obtainedValue = intellect_ANOVA_summary[[1]]$Df[2], 
+  valueType = "df")
+
+reportObject <- reproCheck(
+  reportedValue = "<0.01", 
+  obtainedValue = intellect_ANOVA_summary[[1]]$`Pr(>F)`[1], 
+  valueType = "p", 
+  eyeballCheck = TRUE)
+
+# reprocheck for the effect size
+eta_sq_intellect <- eta_sq(intellect_ANOVA)
+
+reportObject <- reproCheck(
+  reportedValue = "0.12", 
+  obtainedValue = select(eta_sq_intellect, etasq), 
+  valueType = "other")
+```
+
+All stats in the one-way ANOVA are correct.
+
+#### Pairwise comparisons
+
+```{r}
+# check pairwise comparisons
+pairs_intellect <- 
+  contrast(lsmeans(intellect_ANOVA, ~ Condition), 
+           alpha = 0.05, method = "pairwise", adjust = "none") %>%
+  as.tibble() %>%
+  # add 95% CI
+  mutate(lower = estimate - 1.96*SE,
+         upper = estimate + 1.96*SE)
+
+
+#---------------------------
+
+# reprocheck t-test intellect audio vs. transcript
+reportObject <- reproCheck(
+  reportedValue = "3.79",
+  obtainedValue = pairs_intellect$t.ratio[1],
+  valueType = "t"
+)
+
+reportObject <- reproCheck(
+  reportedValue = "157",
+  obtainedValue = pairs_intellect$df[1],
+  valueType = "df"
+)
+
+reportObject <- reproCheck(
+  reportedValue = "<.01",
+  obtainedValue = pairs_intellect$p.value[1],
+  valueType = "p",
+  eyeballCheck = TRUE
+)
+
+reportObject <- reproCheck(
+  reportedValue = "0.70",
+  obtainedValue = pairs_intellect$lower[1],
+  valueType = "ci"
+)
+
+reportObject <- reproCheck(
+  reportedValue = "2.51",
+  obtainedValue = pairs_intellect$upper[1],
+  valueType = "ci"
+)
+
+# calculate effect size d based on raw means and standard deviations
+ES_intellect <- mes(m.1 = mean(data$intellect[data$Condition == "audio"], na.rm = TRUE),
+          m.2 = mean(data$intellect[data$Condition == "transcript"], na.rm = TRUE),
+          sd.1 = sd(data$intellect[data$Condition == "audio"], na.rm = TRUE),
+          sd.2 = sd(data$intellect[data$Condition == "transcript"], na.rm = TRUE),
+          n.1 = sum(!is.na(data$intellect[data$Condition == "audio"])),
+          n.2 = sum(!is.na(data$intellect[data$Condition == "transcript"])))
+
+reportObject <- reproCheck(
+  reportedValue="0.60", 
+  obtainedValue = ES_intellect$d, 
+  valueType="d")
+
+#---------------------------
+
+# reprocheck t-test intellect video vs. audio
+
+reportObject <- reproCheck(
+  reportedValue = "<1",
+  obtainedValue = pairs_intellect$t.ratio[2],
+  valueType = "t",
+  eyeballCheck = TRUE
+)
+
+reportObject <- reproCheck(
+  reportedValue = "157",
+  obtainedValue = pairs_intellect$df[2],
+  valueType = "df"
+)
+
+```
+
+### One-way ANOVA for the variable impression
+
+#### Pairwise comparisons
+
+```{r}
+# one-way ANOVA for the variable impression
+impression_ANOVA <- aov(impression ~ Condition, data = data)
+
+# check pairwise comparisons
+pairs_impression <- 
+  contrast(lsmeans(impression_ANOVA, ~ Condition), 
+           alpha = 0.05, method = "pairwise", adjust = "none") %>%
+  as.tibble() %>%
+  # add 95% CI
+  mutate(lower = estimate - 1.96*SE,
+         upper = estimate + 1.96*SE)
+
+# reprocheck t-test intellect audio vs. transcript
+reportObject <- reproCheck(
+  reportedValue = "2.16",
+  obtainedValue = pairs_impression$t.ratio[1],
+  valueType = "t"
+)
+
+reportObject <- reproCheck(
+  reportedValue = "159",
+  obtainedValue = pairs_impression$df[1],
+  valueType = "df"
+)
+
+reportObject <- reproCheck(
+  reportedValue = ".03",
+  obtainedValue = pairs_impression$p.value[1],
+  valueType = "p"
+)
+
+reportObject <- reproCheck(
+  reportedValue = "0.02",
+  obtainedValue = pairs_impression$lower[1],
+  valueType = "ci"
+)
+
+reportObject <- reproCheck(
+  reportedValue = "1.80",
+  obtainedValue = pairs_impression$upper[1],
+  valueType = "ci"
+)
+
+# calculate effect size d based on raw means and standard deviations
+ES_impression <- mes(m.1 = mean(data$impression[data$Condition == "audio"], na.rm = TRUE),
+          m.2 = mean(data$impression[data$Condition == "transcript"], na.rm = TRUE),
+          sd.1 = sd(data$impression[data$Condition == "audio"], na.rm = TRUE),
+          sd.2 = sd(data$impression[data$Condition == "transcript"], na.rm = TRUE),
+          n.1 = sum(!is.na(data$impression[data$Condition == "audio"])),
+          n.2 = sum(!is.na(data$impression[data$Condition == "transcript"])))
+
+reportObject <- reproCheck(
+  reportedValue="0.34", 
+  obtainedValue = ES_impression$d, 
+  valueType="d")
+
+#---------------------------
+
+# reprocheck t-test impression video vs. audio
+
+reportObject <- reproCheck(
+  reportedValue = "<1",
+  obtainedValue = pairs_impression$t.ratio[2],
+  valueType = "t",
+  eyeballCheck = TRUE
+)
+
+```
+
+### One-way ANOVA for the variable hiring
+
+#### Pairwise comparisons
+
+```{r}
+# one-way ANOVA for the variable hiring
+hiring_ANOVA <- aov(hire ~ Condition, data = data)
+
+# check pairwise comparisons
+pairs_hiring <- 
+   contrast(lsmeans(hiring_ANOVA, ~ Condition), 
+           alpha = 0.05, method = "pairwise", adjust = "none") %>%
+  as.tibble() %>%
+  # add 95% CI
+  mutate(lower = estimate - 1.96*SE,
+         upper = estimate + 1.96*SE)
+
+# reprocheck t-test intellect audio vs. transcript
+reportObject <- reproCheck(
+  reportedValue = "2.49",
+  obtainedValue = pairs_hiring$t.ratio[1],
+  valueType = "t"
+)
+
+reportObject <- reproCheck(
+  reportedValue = "156",
+  obtainedValue = pairs_hiring$df[1],
+  valueType = "df"
+)
+
+reportObject <- reproCheck(
+  reportedValue = ".01",
+  obtainedValue = pairs_hiring$p.value[1],
+  valueType = "p"
+)
+
+reportObject <- reproCheck(
+  reportedValue = "0.22",
+  obtainedValue = pairs_hiring$lower[1],
+  valueType = "ci"
+)
+
+reportObject <- reproCheck(
+  reportedValue = "2.34",
+  obtainedValue = pairs_hiring$upper[1],
+  valueType = "ci"
+)
+
+# calculate effect size d based on raw means and standard deviations
+ES_hiring <- mes(m.1 = mean(data$hire[data$Condition == "audio"], na.rm = TRUE),
+          m.2 = mean(data$hire[data$Condition == "transcript"], na.rm = TRUE),
+          sd.1 = sd(data$hire[data$Condition == "audio"], na.rm = TRUE),
+          sd.2 = sd(data$hire[data$Condition == "transcript"], na.rm = TRUE),
+          n.1 = sum(!is.na(data$hire[data$Condition == "audio"])),
+          n.2 = sum(!is.na(data$hire[data$Condition == "transcript"])))
+
+reportObject <- reproCheck(
+  reportedValue="0.40", 
+  obtainedValue = ES_hiring$d, 
+  valueType="d")
+
+#---------------------------
+
+# reprocheck t-test hiring video vs. audio
+
+reportObject <- reproCheck(
+  reportedValue = "<1",
+  obtainedValue = pairs_hiring$t.ratio[2],
+  valueType = "t",
+  eyeballCheck = TRUE
+)
+
+```
+
+# Step 5: Conclusion
+This reproducibility check has not been completely successful. I was able to reproduce all descriptive statistics, and almost all test statistics, degrees of freedom, and p-values for the omnibus test and pairwise comparisons. Most of the mismatches arose in the confidence intervals and effect sizes of the pairwise comparisons. I suspect that the authors have used a slightly different method to estimate these comparisons. In their SPSS syntax, they seem to have defined custom contrasts:
+
+```{r, echo = TRUE, eval = FALSE}
+ONEWAY intellect impression hire BY cond2 
+  /CONTRAST=0 1 -1 
+  /CONTRAST=1 0 -1 
+  /CONTRAST=1 -1 0 
+  /CONTRAST=1 1 -2 
+  /STATISTICS DESCRIPTIVES 
+  /MISSING ANALYSIS.
+```
+
+I was not able to translate this directly to R, so I used standard functions to compute pairwise comparisons.
+
+The mismatches in the numbers do not seem to affect any of the substantive conclusions.
+
+```{r}
+Author_Assistance = FALSE # was author assistance provided? (if so, enter TRUE)
+
+Insufficient_Information_Errors <- 0 # how many discrete insufficient information issues did you encounter?
+
+# Assess the causal locus (discrete reproducibility issues) of any reproducibility errors. Note that there doesn't necessarily have to be a one-to-one correspondance between discrete reproducibility issues and reproducibility errors. For example, it could be that the original article neglects to mention that a Greenhouse-Geisser correct was applied to ANOVA outcomes. This might result in multiple reproducibility errors, but there is a single causal locus (discrete reproducibility issue).
+
+locus_typo <- 1 # how many discrete issues did you encounter that related to typographical errors?
+locus_specification <- 0 # how many discrete issues did you encounter that related to incomplete, incorrect, or unclear specification of the original analyses?
+locus_analysis <- 0 # how many discrete issues did you encounter that related to errors in the authors' original analyses?
+locus_data <- 0 # how many discrete issues did you encounter that related to errors in the data files shared by the authors?
+locus_unidentified <- 9 # how many discrete issues were there for which you could not identify the cause
+
+# How many of the above issues were resolved through author assistance?
+locus_typo_resolved <- NA # how many discrete issues did you encounter that related to typographical errors?
+locus_specification_resolved <- NA # how many discrete issues did you encounter that related to incomplete, incorrect, or unclear specification of the original analyses?
+locus_analysis_resolved <- NA # how many discrete issues did you encounter that related to errors in the authors' original analyses?
+locus_data_resolved <- NA # how many discrete issues did you encounter that related to errors in the data files shared by the authors?
+locus_unidentified_resolved <- NA # how many discrete issues were there for which you could not identify the cause
+
+Affects_Conclusion <- 0 # Do any reproducibility issues encounter appear to affect the conclusions made in the original article? TRUE, FALSE, or NA. This is a subjective judgement, but you should taking into account multiple factors, such as the presence/absence of decision errors, the number of target outcomes that could not be reproduced, the type of outcomes that could or could not be reproduced, the difference in magnitude of effect sizes, and the predictions of the specific hypothesis under scrutiny.
+```
+
+
+```{r}
+reportObject <- reportObject %>%
+  filter(dummyRow == FALSE) %>% # remove the dummy row
+  select(-dummyRow) %>% # remove dummy row designation
+  mutate(articleID = articleID) %>% # add variables to report 
+  select(articleID, everything()) # make articleID first column
+
+# decide on final outcome
+if(any(reportObject$comparisonOutcome %in% c("MAJOR_ERROR", "DECISION_ERROR")) | Insufficient_Information_Errors > 0){
+  finalOutcome <- "Failure without author assistance"
+  if(Author_Assistance == T){
+    finalOutcome <- "Failure despite author assistance"
+  }
+}else{
+  finalOutcome <- "Success without author assistance"
+  if(Author_Assistance == T){
+    finalOutcome <- "Success with author assistance"
+  }
+}
+
+# collate report extra details
+reportExtras <- data.frame(articleID, pilotNames, copilotNames, pilotTTC, copilotTTC, pilotStartDate, copilotStartDate, completionDate, Author_Assistance, finalOutcome, Insufficient_Information_Errors, locus_typo, locus_specification, locus_analysis, locus_data, locus_unidentified, locus_typo_resolved, locus_specification_resolved, locus_analysis_resolved, locus_data_resolved, locus_unidentified_resolved)
+
+# save report objects
+if(reportType == "pilot"){
+  write_csv(reportObject, "pilotReportDetailed.csv")
+  write_csv(reportExtras, "pilotReportExtras.csv")
+}
+
+if(reportType == "final"){
+  write_csv(reportObject, "finalReportDetailed.csv")
+  write_csv(reportExtras, "finalReportExtras.csv")
+}
+```
+
+# Session information
+
+[This function will output information about the package versions used in this report:]
+
+```{r session_info, include=TRUE, echo=TRUE, results='markup'}
+devtools::session_info()
+```
